@@ -139,7 +139,7 @@ namespace LiveSplit.View
         {
             var timerFont = new Font(Settings.TimerFont.FontFamily.Name, (Settings.TimerFont.Size / 50f) * 18f, Settings.TimerFont.Style, GraphicsUnit.Point);
             var dialog = SettingsHelper.GetFontDialog(timerFont, 7, 20);
-            dialog.FontChanged += (s, ev) => updateTimerFont(((CustomFontDialog.FontChangedEventArgs)ev).NewFont);
+            dialog.FontChanged += (s, ev) => updateTimerFont(((WinFormsFontDialog.FontChangedEventArgs)ev).NewFont);
             dialog.ShowDialog(this);
             lblTimer.Text = TimerFont;
         }
@@ -152,7 +152,7 @@ namespace LiveSplit.View
         private void btnTimes_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(Settings.TimesFont, 7, 20);
-            dialog.FontChanged += (s, ev) => Settings.TimesFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => Settings.TimesFont = ((WinFormsFontDialog.FontChangedEventArgs)ev).NewFont;
             dialog.ShowDialog(this);
             lblTimes.Text = MainFont;
         }
@@ -160,7 +160,7 @@ namespace LiveSplit.View
         private void btnTextFont_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(Settings.TextFont, 7, 20);
-            dialog.FontChanged += (s, ev) => Settings.TextFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => Settings.TextFont = ((WinFormsFontDialog.FontChangedEventArgs)ev).NewFont;
             dialog.ShowDialog(this);
             lblText.Text = SplitNamesFont;
         }

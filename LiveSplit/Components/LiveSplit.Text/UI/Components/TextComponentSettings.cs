@@ -178,7 +178,7 @@ namespace LiveSplit.UI.Components
         private void btnFont1_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(Font1, 7, 20);
-            dialog.FontChanged += (s, ev) => Font1 = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => Font1 = ev.NewFont;
             dialog.ShowDialog(this);
             lblFont.Text = Font1String;
         }
@@ -186,7 +186,7 @@ namespace LiveSplit.UI.Components
         private void btnFont2_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(Font2, 7, 20);
-            dialog.FontChanged += (s, ev) => Font2 = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => Font2 = ev.NewFont;
             dialog.ShowDialog(this);
             lblFont2.Text = Font2String;
         }

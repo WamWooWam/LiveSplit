@@ -64,7 +64,7 @@ namespace LiveSplit.View
         private string[] gameNames;
         private IEnumerable<IGrouping<string, string>> abbreviations;
 
-        public Image GameIcon { get { return Run.GameIcon ?? Properties.Resources.DefaultGameIcon; } set { Run.GameIcon = value; } }
+        public Image GameIcon { get { return Run.GameIcon ?? LiveSplit.Properties.Resources.DefaultGameIcon; } set { Run.GameIcon = value; } }
         public string GameName
         {
             get { return Run.GameName; }

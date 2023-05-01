@@ -1,5 +1,6 @@
 ﻿using LiveSplit.UI;
 using LiveSplit.Web;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 using System.Xml;
@@ -115,9 +116,9 @@ namespace LiveSplit.Model
             return new Attempt(index, newTime, started, ended, pauseTime);
         }
 
-        public DynamicJsonObject ToJson()
+        public JObject ToJson()
         {
-            dynamic json = new DynamicJsonObject();
+            dynamic json = new JObject();
             json.id = Index;
             json.realTime = Time.RealTime;
             json.gameTime = Time.GameTime;

@@ -11,7 +11,7 @@ namespace LiveSplit
             var lowerLanguage = language.ToLower();
 
             if (lowerLanguage == "javascript" || lowerLanguage == "js")
-                return new JavaScriptScript(code);
+                throw new NotImplementedException("JavaScript has been disabled for security reasons.");
             if (lowerLanguage == "c#" || lowerLanguage == "cs")
                 return new CSharpScript(code);
 

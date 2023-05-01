@@ -1,9 +1,11 @@
 ﻿using LiveSplit.Model;
 using LiveSplit.Options;
+using LiveSplit.Updates;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,13 +22,21 @@ namespace LiveSplit.UI.Components
 
     public abstract class RaceProviderAPI
     {
+        protected HttpClient HttpClient { get; private set; }
+
+        public RaceProviderAPI()
+        {
+            HttpClient = new HttpClient();
+            HttpClient.DefaultRequestHeaders.Add("User-Agent", UpdateHelper.UserAgent);
+        }
+
         public bool IsActivated { get; set; } = true;
         public abstract IEnumerable<IRaceInfo> GetRaces();
         public RacesRefreshedCallback RacesRefreshedCallback;
         public JoinRaceDelegate JoinRace;
         public CreateRaceDelegate CreateRace;
-        public abstract void RefreshRacesListAsync();
-        public abstract Image GetGameImage(string id);
+        public abstract Task RefreshRacesListAsync();
+        public abstract Uri GetGameImageUrl(string id);
         public abstract string ProviderName { get; }
         public abstract string Username { get; }
         public RaceProviderSettings Settings { get; set; }

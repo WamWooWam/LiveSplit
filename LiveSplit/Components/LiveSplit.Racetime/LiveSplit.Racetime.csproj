@@ -1,156 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.props" Condition="Exists('..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.props')" />
-  <Import Project="..\..\packages\cef.redist.x86.89.0.17\build\cef.redist.x86.props" Condition="Exists('..\..\packages\cef.redist.x86.89.0.17\build\cef.redist.x86.props')" />
-  <Import Project="..\..\packages\cef.redist.x64.89.0.17\build\cef.redist.x64.props" Condition="Exists('..\..\packages\cef.redist.x64.89.0.17\build\cef.redist.x64.props')" />
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{071DD33F-6D10-4C1C-AA52-C86F02CEB67C}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LiveSplit.Racetime</RootNamespace>
-    <AssemblyName>LiveSplit.Racetime</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <CefSharpBuildAction>Content</CefSharpBuildAction>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\$(TargetFramework)\Components\</OutDir>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\Debug\Components\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\Release\Components\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="CefSharp, Version=89.0.170.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\CefSharp.Common.89.0.170\lib\net452\CefSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="CefSharp.Core, Version=89.0.170.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\CefSharp.Common.89.0.170\lib\net452\CefSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="CefSharp.WinForms, Version=89.0.170.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\CefSharp.WinForms.89.0.170\lib\net452\CefSharp.WinForms.dll</HintPath>
-    </Reference>
-    <Reference Include="DarkUI, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\DarkUI.2.0.0\lib\DarkUI.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1722.45" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Controller\IAuthentificationSettings.cs" />
-    <Compile Include="Controller\RacetimeChannel.cs" />
-    <Compile Include="Controller\RacetimeAuthenticator.cs" />
-    <Compile Include="Controller\RTAuthentificationSettings.cs" />
-    <Compile Include="Model\RTModelBase.cs" />
-    <Compile Include="Model\SplitUpdate.cs" />
-    <Compile Include="RacetimeAPI.cs" />
-    <Compile Include="Model\MessageType.cs" />
-    <Compile Include="Model\ChatMessage.cs" />
-    <Compile Include="Model\Race.cs" />
-    <Compile Include="Model\RaceState.cs" />
-    <Compile Include="Model\RacetimeUser.cs" />
-    <Compile Include="Model\UserRole.cs" />
-    <Compile Include="Model\UserStatus.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="RacetimeComparisonGenerator.cs" />
-    <Compile Include="RacetimeFactory.cs" />
-    <Compile Include="RacetimeSettings.cs" />
-    <Compile Include="RacetimeSettingsControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="RacetimeSettingsControl.Designer.cs">
-      <DependentUpon>RacetimeSettingsControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="View\ChannelForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="View\ChannelForm.Designer.cs">
-      <DependentUpon>ChannelForm.cs</DependentUpon>
-    </Compile>
+    <ProjectReference Include="..\..\LiveSplit.Core\LiveSplit.Core.csproj" />
+    <ProjectReference Include="..\..\UpdateManager\UpdateManager.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="RacetimeSettingsControl.resx">
-      <DependentUpon>RacetimeSettingsControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="View\ChannelForm.resx">
-      <DependentUpon>ChannelForm.cs</DependentUpon>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\LiveSplit.Core\LiveSplit.Core.csproj">
-      <Project>{6de847db-20a3-4848-aeee-1b4364aecdfb}</Project>
-      <Name>LiveSplit.Core</Name>
-      <Private>False</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\..\UpdateManager\UpdateManager.csproj">
-      <Project>{56dea3a0-2eb7-493b-b50f-a5e3aa8ae52a}</Project>
-      <Name>UpdateManager</Name>
-      <Private>False</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\cef.redist.x64.89.0.17\build\cef.redist.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\cef.redist.x64.89.0.17\build\cef.redist.x64.props'))" />
-    <Error Condition="!Exists('..\..\packages\cef.redist.x86.89.0.17\build\cef.redist.x86.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\cef.redist.x86.89.0.17\build\cef.redist.x86.props'))" />
-    <Error Condition="!Exists('..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.props'))" />
-    <Error Condition="!Exists('..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.targets'))" />
-  </Target>
-  <Import Project="..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.targets" Condition="Exists('..\..\packages\CefSharp.Common.89.0.170\build\CefSharp.Common.targets')" />
-  <PropertyGroup>
-    <PostBuildEvent>cd $(TargetDir)
-RD /S /Q locales
-RD /S /Q swiftshader
-del cef_100_percent.pak
-del cef_200_percent.pak
-del cef_extensions.pak
-del devtools_resources.pak
-del d3dcompiler_47.dll
-del libEGL.dll
-del libGLESv2.dll</PostBuildEvent>
-  </PropertyGroup>
+
 </Project>

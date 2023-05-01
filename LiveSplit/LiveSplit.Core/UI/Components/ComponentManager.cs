@@ -47,7 +47,6 @@ namespace LiveSplit.UI.Components
 
         public static T LoadFactory<T>(string path)
         {
-            T factory = default(T);
             try
             {
                 var attr = (ComponentFactoryAttribute)Attribute
@@ -55,14 +54,18 @@ namespace LiveSplit.UI.Components
 
                 if (attr != null)
                 {
-                    factory = (T)(attr.
+                    var newFactory = attr.
                         ComponentFactoryClassType.
                         GetConstructor(new Type[0]).
-                        Invoke(null));
+                        Invoke(null);
+
+                    if (newFactory is T t) 
+                        return t;
                 }
             }
             catch { }
-            return factory;
+
+            return default(T);
         }
     }
 }

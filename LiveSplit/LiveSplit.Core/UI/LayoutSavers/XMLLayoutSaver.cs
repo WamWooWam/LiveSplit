@@ -110,7 +110,7 @@ namespace LiveSplit.UI.LayoutSavers
             XmlNode docNode = document.CreateXmlDeclaration("1.0", "UTF-8", null);
             document.AppendChild(docNode);
             var parent = document.CreateElement("Layout");
-            parent.Attributes.Append(SettingsHelper.ToAttribute(document, "version", "1.6.1"));
+            parent.Attributes.Append(SettingsHelper.ToAttribute(document, "version", "1.7.0"));
             CreateLayoutNode(document, parent, layout);
             document.AppendChild(parent);
 

@@ -98,3 +98,6 @@
 [submodule "LiveSplit/Components/LiveSplit.AutoSplittingRuntime"]
 	path = LiveSplit/Components/LiveSplit.AutoSplittingRuntime
 	url = https://github.com/LiveSplit/LiveSplit.AutoSplittingRuntime.git
+[submodule "LiveSplit/Components/LiveSplit.TheRun"]
+	path = LiveSplit/Components/LiveSplit.TheRun
+	url = https://github.com/therungg/LiveSplit.TheRun

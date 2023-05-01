@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
+using WinFormsFontDialog;
 
 namespace LiveSplit.UI.Components
 {
@@ -429,7 +430,7 @@ namespace LiveSplit.UI.Components
         private void btnSegmentLabelsFont_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(SegmentLabelsFont, 7, 20);
-            dialog.FontChanged += (s, ev) => SegmentLabelsFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => SegmentLabelsFont = ((FontChangedEventArgs)ev).NewFont;
             dialog.ShowDialog(this);
             lblSegmentLabelsFont.Text = SegmentLabelsFontString;
         }
@@ -437,14 +438,14 @@ namespace LiveSplit.UI.Components
         private void btnSegmentTimesFont_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(SegmentTimesFont, 7, 20);
-            dialog.FontChanged += (s, ev) => SegmentTimesFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => SegmentTimesFont = ((FontChangedEventArgs)ev).NewFont;
             dialog.ShowDialog(this);
             lblSegmentTimesFont.Text = SegmentTimesFontString;
         }
         private void btnSplitNameFont_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(SplitNameFont, 7, 20);
-            dialog.FontChanged += (s, ev) => SplitNameFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => SplitNameFont = ((FontChangedEventArgs)ev).NewFont;
             dialog.ShowDialog(this);
             lblSplitNameFont.Text = SplitNameFontString;
         }

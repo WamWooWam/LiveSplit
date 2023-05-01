@@ -188,7 +188,7 @@ namespace LiveSplit.UI.Components
         private void btnFont_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(TitleFont, 7, 20);
-            dialog.FontChanged += (s, ev) => TitleFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => TitleFont = ev.NewFont;
             dialog.ShowDialog(this);
             lblFont.Text = TitleFontString;
         }

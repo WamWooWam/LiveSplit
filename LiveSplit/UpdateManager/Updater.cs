@@ -46,27 +46,31 @@ namespace UpdateManager
             {
                 get
                 {
-                    if (_Updates == null)
-                    {
-                        List<Update> updateList = new List<Update>();
-                        try
-                        {
-                            using (XmlReader reader = XmlReader.Create(XMLURL))
-                            {
-                                XmlDocument doc = new XmlDocument();
-                                doc.Load(reader);
-                                foreach (XmlNode updateNode in doc.DocumentElement.ChildNodes)
-                                {
-                                    Update update = Update.Parse(updateNode);
-                                    updateList.Add(update);
-                                }
-                            }
-                        }
-                        catch { }
-                        _Updates = updateList;
-                    }
+                    // TODO: This is awful.
 
-                    return _Updates;
+                    //if (_Updates == null)
+                    //{
+                    //    List<Update> updateList = new List<Update>();
+                    //    try
+                    //    {
+                    //        using (XmlReader reader = XmlReader.Create(XMLURL))
+                    //        {
+                    //            XmlDocument doc = new XmlDocument();
+                    //            doc.Load(reader);
+                    //            foreach (XmlNode updateNode in doc.DocumentElement.ChildNodes)
+                    //            {
+                    //                Update update = Update.Parse(updateNode);
+                    //                updateList.Add(update);
+                    //            }
+                    //        }
+                    //    }
+                    //    catch { }
+                    //    _Updates = updateList;
+                    //}
+
+                    //return _Updates;
+
+                    return Array.Empty<Update>(); 
                 }
             }
 
@@ -160,7 +164,7 @@ namespace UpdateManager
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
-            new WebClient().DownloadFile(url, path);
+            new WebClient().DownloadFile(url, path); // die
         }
 
         public static void UpdateAll(IEnumerable<IUpdateable> updateables, string updateManagerDownloadURL)

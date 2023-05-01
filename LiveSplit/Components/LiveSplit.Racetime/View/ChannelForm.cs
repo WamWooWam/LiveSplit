@@ -1,17 +1,17 @@
-﻿using CefSharp;
-using CefSharp.Handler;
-using CefSharp.WinForms;
-using DarkUI.Forms;
-using LiveSplit.Racetime.Controller;
+﻿using LiveSplit.Racetime.Controller;
 using LiveSplit.Racetime.Model;
+using Microsoft.Web.WebView2.Core;
 using System;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace LiveSplit.Racetime.View
 {
-    public partial class ChannelForm : DarkForm
+    public partial class ChannelForm : Form
     {
         public RacetimeChannel Channel { get; set; }
 
@@ -22,32 +22,51 @@ namespace LiveSplit.Racetime.View
             Channel.RaceChanged += Channel_RaceChanged;
             Channel.Authorized += Channel_Authorized;
             InitializeComponent();
-            var settings = new CefSettings();
-            settings.CefCommandLineArgs.Add("no-proxy-server");
-            settings.SetOffScreenRenderingBestPerformanceArgs();
-            settings.LogSeverity = LogSeverity.Disable;
-            try
-            {
-                Cef.Initialize(settings);
-            }
-            catch { }
+
+            //var exePath = Assembly.GetEntryAssembly().CodeBase.Substring(8);
+            //Icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+
+            Load += OnLoaded;
             TopMost = alwaysOnTop;
             Show();
             chatBox.Hide();
             Text = "Connecting to " + channelId.Substring(channelId.IndexOf('/') + 1);
             Channel.Connect(channelId);
-            chatBox.LifeSpanHandler = new ChatBoxLifeSpanHandler();
-            if (Channel.Token != null)
-            {
-                chatBox.RequestHandler = new BearerAuthRequestHandler(Channel.Token.AccessToken);
-            }
-            chatBox.AddressChanged += OnBrowserAddressChanged;
+
+            chatBox.SourceChanged += OnSourceChanged;
+            chatBox.CoreWebView2InitializationCompleted += OnCoreWebViewCreated;
         }
-        private int retries = 0;
-        private DateTime LastRetry = DateTime.Now;
-        private void OnBrowserAddressChanged(object sender, AddressChangedEventArgs e)
+
+        private async void OnLoaded(object sender, EventArgs e)
         {
-            if (chatBox.Address != Channel.FullWebRoot + Channel.Race.Id + "/livesplit")
+            try
+            {
+                var currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Substring(8);
+                var userDataFolder = Path.Combine(currentDirectory, "cache");
+                var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+                await chatBox.EnsureCoreWebView2Async(environment);
+            }
+            catch
+            {
+                // handled in OnCoreWebViewCreated
+            }
+        }
+
+        private void OnCoreWebViewCreated(object sender, CoreWebView2InitializationCompletedEventArgs e)
+        {
+            if (!e.IsSuccess)
+            {
+                ShowWebView2DownloadDialog();
+                return;
+            }
+
+            chatBox.CoreWebView2.WebResourceRequested += OnWebResourceRequested;
+            chatBox.CoreWebView2.AddWebResourceRequestedFilter(Channel.FullWebRoot + "*", CoreWebView2WebResourceContext.All);
+        }
+
+        private void OnSourceChanged(object sender, CoreWebView2SourceChangedEventArgs e)
+        {
+            if (chatBox.Source.ToString() != Channel.FullWebRoot + Channel.Race.Id + "/livesplit")
             {
                 if (retries >= 5)
                 {
@@ -56,10 +75,6 @@ namespace LiveSplit.Racetime.View
                 }
                 else
                 {
-                    if (Channel.Token != null)
-                    {
-                        chatBox.BeginInvoke((Action)(() => chatBox.RequestHandler = new BearerAuthRequestHandler(Channel.Token.AccessToken)));
-                    }
                     Channel_RaceChanged(null, null);
                 }
                 if (LastRetry.AddSeconds(10) >= DateTime.Now)
@@ -75,8 +90,10 @@ namespace LiveSplit.Racetime.View
             }
         }
 
+        private int retries = 0;
+        private DateTime LastRetry = DateTime.Now;
 
-        private void Channel_RaceChanged(object sender, EventArgs e)
+        private async void Channel_RaceChanged(object sender, EventArgs e)
         {
             try
             {
@@ -84,34 +101,38 @@ namespace LiveSplit.Racetime.View
                 {
                     Text = $"{Channel.Race.Goal} [{Channel.Race.GameName}] - {Channel.Race.ChannelName}";
 
-                    if (chatBox.IsBrowserInitialized == true)
+                    if (chatBox.Created == true)
                     {
-                        new Thread(() =>
+                        await Task.Delay(3000);
+
+                        if (retries <= 5)
                         {
-                            Thread.CurrentThread.IsBackground = true;
-                            System.Threading.Thread.Sleep(3000);
-                            if (retries <= 5)
+                            if (Channel.Token != null)
                             {
-                                if (Channel.Token != null)
-                                {
-                                    if (IsHandleCreated)
-                                    {
-                                        chatBox.BeginInvoke((Action)(() => chatBox.RequestHandler = new BearerAuthRequestHandler(Channel.Token.AccessToken)));
-                                        chatBox.BeginInvoke((Action)(() => chatBox.Load(Channel.FullWebRoot + Channel.Race.Id + "/livesplit")));
-                                    }
-                                }
+                                chatBox.BeginInvoke((Action)(() => chatBox.Source = new Uri(Channel.FullWebRoot + Channel.Race.Id + "/livesplit")));
                             }
-                        }).Start();
+                        }
                     }
                 }
             }
-            catch (Exception) { }
+            catch { }
+        }
+
+
+        private void OnWebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e)
+        {
+            // Channel.Token.AccessToken
+            if (!string.IsNullOrEmpty(Channel.Token.AccessToken))
+            {
+                var headers = e.Request.Headers;
+                if (e.Request.Uri.ToLower().Contains(Properties.Resources.PROTOCOL_REST.ToLower() + "://" + Properties.Resources.DOMAIN.ToLower()))
+                    headers.SetHeader("Authorization", $"Bearer {Channel.Token.AccessToken}");
+            }
         }
 
         private void Channel_Authorized(object sender, EventArgs e)
         {
             chatBox.BeginInvoke((Action)(() => Focus()));
-
         }
 
         private void Channel_Disconnected(object sender, EventArgs e)
@@ -143,57 +164,28 @@ namespace LiveSplit.Racetime.View
             Channel.Disconnect();
         }
 
-    }
-    public class ChatBoxLifeSpanHandler : ILifeSpanHandler
-    {
-        public bool OnBeforePopup(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture, IPopupFeatures popupFeatures, IWindowInfo windowInfo, IBrowserSettings browserSettings, ref bool noJavascriptAccess, out IWebBrowser newBrowser)
+        private void ShowWebView2DownloadDialog()
         {
-            System.Diagnostics.Process.Start(targetUrl);
-            newBrowser = null;
-            return true;
-        }
-        public bool DoClose(IWebBrowser chromiumWebBrowser, IBrowser browser) { return true; }
-        public void OnBeforeClose(IWebBrowser browser) { }
-        public void OnAfterCreated(IWebBrowser chromiumWebBrowser, IBrowser browser) { }
-        public void OnBeforeClose(IWebBrowser chromiumWebBrowser, IBrowser browser) { }
-    }
-    class BearerAuthResourceRequestHandler : ResourceRequestHandler
-    {
-        public BearerAuthResourceRequestHandler(string token)
-        {
-            _token = token;
-        }
-
-        private string _token;
-
-        protected override CefReturnValue OnBeforeResourceLoad(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IRequestCallback callback)
-        {
-            if (!string.IsNullOrEmpty(_token))
+            if (this.InvokeRequired)
             {
-                var headers = request.Headers;
-                Regex rg = new Regex(Properties.Resources.PROTOCOL_REST.ToLower() + @":\/\/" + Properties.Resources.DOMAIN.ToLower() + @"/.*\/", RegexOptions.IgnoreCase);
-                if (rg.Match(request.Url.ToLower()).Success)
-                    headers["Authorization"] = $"Bearer {_token}";
-                request.Headers = headers;
-                return CefReturnValue.Continue;
+                this.Invoke((Action)(() => ShowWebView2DownloadDialog()));
+                return;
             }
-            else return base.OnBeforeResourceLoad(chromiumWebBrowser, browser, frame, request, callback);
-        }
 
-    }
-    class BearerAuthRequestHandler : RequestHandler
-    {
-        public BearerAuthRequestHandler(string token)
-        {
-            _token = token;
-        }
+            var downloadButton = new TaskDialogCommandLinkButton("Download") { DescriptionText = "This will open in your default web browser." };
+            var closeButton = new TaskDialogCommandLinkButton("Close") { DescriptionText = "LiveSplit.Racetime will not work until runtimes are installed." };
 
-        private string _token;
+            //var dialog = TaskDialog.ShowDialog();
+            var dialog = new TaskDialogPage();
+            dialog.Icon = new TaskDialogIcon(Icon);
+            dialog.Heading = dialog.Caption = "Microsoft Edge WebView2 Runtime Required";
+            dialog.Text = "LiveSplit.Racetime requires the Microsoft Edge WebView2 Runtime to be installed on your machine in order to function. This should be included with Microsoft Edge, but we couldn't find it. Do you want to download it now?";
+            dialog.Buttons.Add(downloadButton);
+            dialog.Buttons.Add(closeButton);
+            if (downloadButton == TaskDialog.ShowDialog(dialog))
+                Process.Start("https://aka.ms/winui2/webview2download");
 
-        protected override IResourceRequestHandler GetResourceRequestHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool isNavigation, bool isDownload, string requestInitiator, ref bool disableDefaultHandling)
-        {
-            if (!string.IsNullOrEmpty(_token)) return new BearerAuthResourceRequestHandler(_token);
-            else return base.GetResourceRequestHandler(chromiumWebBrowser, browser, frame, request, isNavigation, isDownload, requestInitiator, ref disableDefaultHandling);
+            Close();
         }
     }
 }

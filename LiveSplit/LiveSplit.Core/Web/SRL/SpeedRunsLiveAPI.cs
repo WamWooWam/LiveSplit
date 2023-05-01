@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Net;
+using System.Security.Policy;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -90,33 +91,9 @@ namespace LiveSplit.Web.SRL
             return racesList;
         }
 
-        public override Image GetGameImage(string gameId)
+        public override Uri GetGameImageUrl(string gameId)
         {
-            lock (imageList)
-            {
-                if (!imageList.ContainsKey(gameId))
-                {
-                    Image image = null;
-
-                    try
-                    {
-                        var request = WebRequest.Create($"http://c15111072.r72.cf2.rackcdn.com/{gameId}.jpg");
-
-                        using (var response = request.GetResponse())
-                        using (var stream = response.GetResponseStream())
-                        {
-                            image = Image.FromStream(stream);
-                        }
-                    }
-                    finally
-                    {
-                        if (!imageList.ContainsKey(gameId))
-                            imageList.Add(gameId, image);
-                    }
-                }
-
-                return imageList[gameId];
-            }
+            return new Uri($"http://c15111072.r72.cf2.rackcdn.com/{gameId}.jpg");
         }
 
         void SpeedRunsLiveAPI_Elapsed(object sender, ElapsedEventArgs e)
@@ -128,10 +105,9 @@ namespace LiveSplit.Web.SRL
             catch { }
         }
 
-        public override void RefreshRacesListAsync()
+        public override Task RefreshRacesListAsync()
         {
-            Task.Factory.StartNew(() => RefreshRacesList())
-                .ContinueWith((raceItem) => { }, TaskContinuationOptions.OnlyOnFaulted);
+            return Task.Factory.StartNew(() => RefreshRacesList());
         }
 
         public void RefreshRacesList()

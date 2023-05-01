@@ -7,8 +7,15 @@ using System.Threading.Tasks;
 
 namespace LiveSplit.Racetime.Model
 {
-    public class RacetimeUser : RTModelBase
+    public class RacetimeUser
     {
+        public UserDto Data { get; set; }
+
+        public RacetimeUser(UserDto userDto)
+        {
+            Data = userDto;
+        }
+
         private int nameChcecksum = -1;
         public int Class
         {
@@ -23,51 +30,21 @@ namespace LiveSplit.Racetime.Model
         {
             return Name.ToLower() == ((RacetimeUser)obj)?.Name?.ToLower();
         }
-        public string ID
-        {
-            get
-            {
-                return Data.id;
-            }
-        }
-        public string FullName
-        {
-            get
-            {
-                return Data.full_name;
-            }
-        }
-        public string Name
-        {
-            get
-            {
-                return Data.name ?? "";
-            }
-        }
-        public string TwitchChannel
-        {
-            get
-            {
-                return Data.twitch_channel;
-            }
-        }
-        public string TwitchName
-        {
-            get
-            {
-                return Data.twitch_name;
-            }
-        }
+        public string ID => Data.id;
+        public string FullName => Data.full_name;
+        public string Name => Data.name ?? "";
+        public string TwitchChannel => Data.twitch_channel;
+        public string TwitchName => Data.twitch_name;
         public UserRole Role
         {
             get
             {
                 UserRole r = UserRole.Regular;
 
-                if (Data.user.flair == null)
+                if (Data.flair == null)
                     return UserRole.Unknown;
 
-                string[] flairs = Data.user.flair.ToString().Split(' ');
+                string[] flairs = Data.flair.ToString().Split(' ');
                 foreach (string f in flairs)
                 {
                     switch (f)
@@ -99,126 +76,30 @@ namespace LiveSplit.Racetime.Model
                     case "in_progress": s = UserStatus.Racing; break;
                     case "dnf": s = UserStatus.Forfeit; break;
                     case "dq": s = UserStatus.Disqualified; break;
-                    default:s = UserStatus.Unknown; break;
+                    default: s = UserStatus.Unknown; break;
                 }
                 return s;
             }
         }
 
-        public DateTime FinishedAt
-        {
-            get
-            {
-                try
-                {
-                    DateTime dt;
-                    if (DateTime.TryParse(Data.finished_at, out dt))
-                    {
-                        return dt.ToUniversalTime();
-                    }
-                    return DateTime.MaxValue;
-                }
-                catch(Exception ex)
-                {
-                    return DateTime.MaxValue;
-                }
-            }
-        }
-        public bool HasFinished
-        {
-            get
-            {
-                return FinishedAt != DateTime.MaxValue;
-            }
-        }
-        public int Place
-        {
-            get
-            {
-                try
-                {
-                    if(Data.place != null)
-                        return Data.place;
-                    return 0;
-                }
-                catch
-                {
-                    return 0;
-                }
-            }
-        }
-        public string PlaceOrdinal
-        {
-            get
-            {
-                try
-                {
-                    return Data.place_ordinal;
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-        }
-        public string Comment
-        {
-            get
-            {
-                try
-                {
-                    return Data.comment;
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-        }
-        public bool IsLive
-        {
-            get
-            {
-                try
-                {
-                    return Data.stream_live;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
-        public bool StreamOverride
-        {
-            get
-            {
-                try
-                {
-                    return Data.stream_override;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
+        public DateTime FinishedAt => Data.finished_at?.ToUniversalTime() ?? DateTime.MaxValue;
+        public bool HasFinished => FinishedAt != DateTime.MaxValue;
+        public int Place => Data.place ?? 0;
+        public string PlaceOrdinal => Data.place_ordinal;
+        public string Comment => Data.comment;
+
+        public bool IsLive => Data.stream_live;
+
+        public bool StreamOverride => Data.stream_override;
 
         public static RacetimeUser System = CreateBot("RaceBot", "bot staff moderator monitor");
         public static RacetimeUser Bot = CreateBot("Bot", "bot staff moderator monitor");
         public static RacetimeUser LiveSplit = CreateBot("LiveSplit", "system staff moderator monitor");
         public static RacetimeUser Anonymous = CreateBot("Anonymous", "anonymous");
 
-
         public static RacetimeUser CreateBot(string botname, string flairs)
         {
-            var dataroot = new
-            {
-                    name = botname,
-                    id = botname,
-                    flair = flairs,
-            };
-            return Create<RacetimeUser>(dataroot);
+            return new RacetimeUser(new UserDto() { name = botname, id = botname, flair = flairs});
         }
 
     }

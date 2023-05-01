@@ -10,7 +10,7 @@ namespace LiveSplit.Updates
 {
     public static class UpdateHelper
     {
-        public static readonly Version Version = Version.Parse($"{ Git.LastTag }.{ Git.CommitsSinceLastTag }");
+        public static readonly Version Version = Version.Parse($"1.0.0");
         public static string UserAgent => $"LiveSplit/{ Version }";
 
         public static readonly List<Type> AlreadyChecked = new List<Type>();

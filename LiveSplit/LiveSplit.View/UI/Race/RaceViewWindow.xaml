@@ -1,0 +1,108 @@
+﻿<Window x:Class="LiveSplit.UI.Race.RaceViewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LiveSplit.UI.Race"
+        mc:Ignorable="d" Loaded="Window_Loaded"
+        Title="Races" Height="500" Width="300">
+    <Window.Resources>
+        <DataTemplate x:Key="NotStartedRaceTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Image Source="{Binding ImageUrl}" Width="32" Height="32" Margin="4"/>
+                <StackPanel Grid.Column="1" Margin="4">
+                    <TextBlock Text="{Binding GameName}" FontWeight="Bold" TextWrapping="Wrap"/>
+                    <TextBlock TextWrapping="Wrap">
+                        <Run Text="{Binding Goal, Mode=OneWay}" FontWeight="Bold"/>
+                        <Run Text=" - "/>
+                        <Run Text="{Binding EntrantsText, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <Button Grid.Column="2" 
+                        Content="Join"
+                        Margin="8" 
+                        Command="{Binding JoinCommand}"
+                        MinHeight="22"/>
+                
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="InProgressRaceTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Image Source="{Binding ImageUrl}"
+                       Width="32"
+                       Height="32"
+                       Margin="4"
+                       VerticalAlignment="Top"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <StackPanel Grid.Column="1" Margin="4">
+                    <TextBlock Text="{Binding GameName}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock TextWrapping="Wrap">
+                        <Run Text="{Binding Goal, Mode=OneWay}" FontWeight="Bold"/>
+                        <Run Text="-"/>
+                        <Run Text="{Binding Time, Mode=OneWay}"/>
+                        <Run Text="("/><Run Text="{Binding Finished, Mode=OneWay}"/><Run Text=" finished)"/>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <local:RaceItemTemplateSelector x:Key="RaceItemTemplateSelector"
+                                        NotStartedTemplate="{StaticResource NotStartedRaceTemplate}"
+                                        InProgressTemplate="{StaticResource InProgressRaceTemplate}"/>
+
+        <local:RaceStateToStringConverter x:Key="RaceStateToStringConverter"/>
+    </Window.Resources>
+    <TabControl x:Name="RaceProviders"
+                    ItemsSource="{Binding Providers}" 
+                    SelectedItem="{Binding SelectedProvider}">
+        <TabControl.ItemTemplate>
+            <DataTemplate>
+                <TextBlock Text="{Binding Name}"/>
+            </DataTemplate>
+        </TabControl.ItemTemplate>
+        <TabControl.ContentTemplate>
+            <DataTemplate>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ListView ItemsSource="{Binding Races}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              HorizontalContentAlignment="Stretch" 
+                              VirtualizingPanel.ScrollUnit="Pixel"
+                              ItemTemplateSelector="{StaticResource RaceItemTemplateSelector}">
+                        <ListView.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock FontWeight="Bold" Margin="4" Text="{Binding Name, Converter={StaticResource RaceStateToStringConverter}}"/>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListView.GroupStyle>
+                    </ListView>
+
+                    <Button Grid.Row="1" 
+                            Content="New Race"
+                            Margin="8" 
+                            Command="{Binding NewRaceCommand}"
+                            MinHeight="22"/>
+                </Grid>
+            </DataTemplate>
+        </TabControl.ContentTemplate>
+    </TabControl>
+</Window>

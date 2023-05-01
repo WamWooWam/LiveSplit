@@ -309,7 +309,7 @@ namespace LiveSplit.UI.Components
         private void btnFont_Click(object sender, EventArgs e)
         {
             var dialog = SettingsHelper.GetFontDialog(CounterFont, 7, 20);
-            dialog.FontChanged += (s, ev) => CounterFont = ((CustomFontDialog.FontChangedEventArgs)ev).NewFont;
+            dialog.FontChanged += (s, ev) => CounterFont = ev.NewFont;
             dialog.ShowDialog(this);
             lblFont.Text = CounterFontString;
         }

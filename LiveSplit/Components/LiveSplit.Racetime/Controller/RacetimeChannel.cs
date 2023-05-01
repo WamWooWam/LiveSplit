@@ -15,6 +15,7 @@ using LiveSplit.Options;
 using LiveSplit.Racetime.Model;
 using LiveSplit.TimeFormatters;
 using LiveSplit.Web;
+using Newtonsoft.Json.Linq;
 
 namespace LiveSplit.Racetime.Controller
 {
@@ -127,7 +128,7 @@ namespace LiveSplit.Racetime.Controller
                 return false;
             }
 
-            IEnumerable<ChatMessage> chatmessages = Parse(JSON.FromString(msg));
+            IEnumerable<ChatMessage> chatmessages = Parse(JObject.Parse(msg));
             try
             {
                 ChatMessage racemessage;
@@ -230,7 +231,7 @@ namespace LiveSplit.Racetime.Controller
                     try
                     {
                         ArraySegment<byte> bytesToSend = new ArraySegment<byte>(Encoding.UTF8.GetBytes("{ \"action\":\"getrace\" }"));
-                        ws.SendAsync(bytesToSend, WebSocketMessageType.Text, true, CancellationToken.None);
+                        await ws.SendAsync(bytesToSend, WebSocketMessageType.Text, true, CancellationToken.None);
                         await ReceiveAndProcess();
 
                     }
@@ -247,7 +248,7 @@ namespace LiveSplit.Racetime.Controller
                         {
                             SendSystemMessage("Loading chat history...");
                             ArraySegment<byte> otherBytesToSend = new ArraySegment<byte>(Encoding.UTF8.GetBytes("{ \"action\":\"gethistory\" }"));
-                            ws.SendAsync(otherBytesToSend, WebSocketMessageType.Text, true, CancellationToken.None);
+                            await ws.SendAsync(otherBytesToSend, WebSocketMessageType.Text, true, CancellationToken.None);
                             await ReceiveAndProcess();
 
                         }
@@ -487,21 +488,21 @@ namespace LiveSplit.Racetime.Controller
             }
         }
 
-        public IEnumerable<ChatMessage> Parse(dynamic m)
+        public IEnumerable<ChatMessage> Parse(JObject m)
         {
-            switch (m.type)
+            switch (m["type"].ToObject<string>())
             {
                 case "error":
-                    yield return RTModelBase.Create<ErrorMessage>(m);
+                    yield return new ErrorMessage(m.ToObject<MessageDto>());
                     break;
                 case "race.data":
-                    yield return RTModelBase.Create<RaceMessage>(m.race);
+                    yield return new RaceMessage(m["race"].ToObject<MessageDto>(), m);
                     break;
                 case "race.split":
-                    yield return RTModelBase.Create<SplitMessage>(m.split);
+                    yield return new SplitMessage(m["split"].ToObject<MessageDto>(), m);
                     break;
                 case "livesplit":
-                    yield return RTModelBase.Create<LiveSplitMessage>(m.message);
+                    yield return new LiveSplitMessage(m["message"].ToObject<MessageDto>());
                     break;
             }
             yield break;
@@ -526,8 +527,8 @@ namespace LiveSplit.Racetime.Controller
             if (PersonalStatus == UserStatus.Racing)
             {
                 var split = Model.CurrentState.CurrentSplit;
-                dynamic cmd = new DynamicJsonObject();
-                dynamic data = new DynamicJsonObject();
+                dynamic cmd = new JObject();
+                dynamic data = new JObject();
                 cmd.action = "split";
                 data.split = split.Name;
                 data.time = "-";
@@ -545,8 +546,8 @@ namespace LiveSplit.Racetime.Controller
                 if (Model.CurrentState.CurrentSplitIndex > 0)
                 {
                     var split = Model.CurrentState.Run[Model.CurrentState.CurrentSplitIndex - 1];
-                    dynamic cmd = new DynamicJsonObject();
-                    dynamic data = new DynamicJsonObject();
+                    dynamic cmd = new JObject();
+                    dynamic data = new JObject();
                     cmd.action = "split";
                     data.split = split.Name;
                     data.is_finish = Model.CurrentState.CurrentSplitIndex >= Model.CurrentState.Run.Count ? true : false;
@@ -626,9 +627,9 @@ namespace LiveSplit.Racetime.Controller
 
         private Regex cmdRegex = new Regex(@"^\.([a-z]+)\s*?(.+)?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public DynamicJsonObject CreateCommand(string message)
+        public JObject CreateCommand(string message)
         {
-            dynamic command = new DynamicJsonObject();
+            dynamic command = new JObject();
             var data = new Dictionary<string, dynamic>();
             Match m = cmdRegex.Match(message);
             if (m.Success)
@@ -677,7 +678,7 @@ namespace LiveSplit.Racetime.Controller
             message = message.Trim();
             message = message.Replace("\"", "\\\"");
 
-            DynamicJsonObject cmd = CreateCommand(message);
+            JObject cmd = CreateCommand(message);
             SendChannelCommand(cmd.ToString());
         }
 

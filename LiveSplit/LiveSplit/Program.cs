@@ -19,6 +19,7 @@ namespace LiveSplit
             {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+
                 Environment.CurrentDirectory = Path.GetDirectoryName(Application.ExecutablePath);
 
 #if !DEBUG

@@ -1,41 +1,105 @@
 ﻿using LiveSplit.Model;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace LiveSplit.Web.SRL
 {
+
     public class SRLRaceInfo : IRaceInfo
     {
-        private dynamic _data;
+        private class RaceInfo
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("game")]
+            public Game Game { get; set; }
+
+            [JsonProperty("goal")]
+            public string Goal { get; set; }
+
+            [JsonProperty("state")]
+            public int State { get; set; }
+
+            [JsonProperty("time")]
+            public int Time { get; set; }
+
+            [JsonProperty("numentrants")]
+            public int NumEntrants { get; set; }
+
+            [JsonProperty("entrants")]
+            public Dictionary<string, Entrant> Entrants { get; set; }
+        }
+
+        private class Entrant
+        {
+            [JsonProperty("displayname")]
+            public string DisplayName { get; set; }
+
+            [JsonProperty("place")]
+            public int Place { get; set; }
+
+            [JsonProperty("time")]
+            public int Time { get; set; }
+
+            [JsonProperty("statetext")]
+            public string StateText { get; set; }
+
+            [JsonProperty("twitch")]
+            public string Twitch { get; set; }
+        }
+
+        private class Game
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("abbrev")]
+            public string Abbreviation { get; set; }
+
+            [JsonProperty("popularity")]
+            public int Popularity { get; set; }
+
+            [JsonProperty("popularityrank")]
+            public int PopularityRank { get; set; }
+        }
+
+        private RaceInfo _data;
 
         public SRLRaceInfo(dynamic data)
         {
-            _data = data;
-            foreach (var entrant in _data.entrants.Properties.Values)
+            _data = ((JObject)data).ToObject<RaceInfo>();
+            foreach (var entrant in _data.Entrants)
             {
-                if (entrant.time >= 0)
+                if (entrant.Value.Time >= 0)
                     Finishes++;
-                if (entrant.statetext == "Forfeit")
+                if (entrant.Value.StateText == "Forfeit")
                     Forfeits++;
             }
         }
 
-        public string Id => _data.id;
-        public string GameName => _data.game.name;
+        public string Id => _data.Id;
+        public string GameName => _data.Game.Name;
         public int Finishes { get; set; } = 0;
         public int Forfeits { get; set; } = 0;
-        public int NumEntrants => _data.numentrants;
-        public string Goal => _data.goal;
-        public int State => _data.state;
-        public int Starttime => _data.time;
-        public string GameId => _data.game.abbrev;
+        public int NumEntrants => _data.NumEntrants;
+        public string Goal => _data.Goal;
+        public int State => _data.State;
+        public int Starttime => _data.Time;
+        public string GameId => _data.Game.Abbreviation;
 
         public bool IsParticipant(string username)
         {
-            var racers = ((IEnumerable<string>)_data.entrants.Properties.Keys).Select(x => x.ToLower());
+            var racers = (_data.Entrants).Select(x => x.Key.ToLower());
             return racers.Contains((username ?? "").ToLower());
         }
         
@@ -43,12 +107,12 @@ namespace LiveSplit.Web.SRL
         {
             get
             {
-                foreach (var entrant in _data.entrants.Properties.Values)
+                foreach (var entrant in _data.Entrants.Values)
                 {
-                    if (entrant.statetext == "Forfeit" || entrant.time >= 0)
+                    if (entrant.StateText == "Forfeit" || entrant.Time >= 0)
                         continue;
 
-                    yield return entrant.twitch;
+                    yield return entrant.Twitch;
                 }
             }
         }

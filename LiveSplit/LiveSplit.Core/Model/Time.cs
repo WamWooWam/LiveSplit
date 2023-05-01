@@ -1,4 +1,5 @@
 ﻿using LiveSplit.Web;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Xml;
 
@@ -78,9 +79,9 @@ namespace LiveSplit.Model
             return parent;
         }
 
-        public DynamicJsonObject ToJson()
+        public JObject ToJson()
         {
-            dynamic json = new DynamicJsonObject();
+            dynamic json = new JObject();
             json.realTime = RealTime.ToString();
             json.gameTime = GameTime.ToString();
             return json;

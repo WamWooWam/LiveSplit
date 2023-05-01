@@ -1,4 +1,5 @@
 ﻿using LiveSplit.Web;
+using Newtonsoft.Json.Linq;
 using System.Xml;
 
 namespace LiveSplit.Model
@@ -33,9 +34,9 @@ namespace LiveSplit.Model
             return new IndexedTime(newTime, index);
         }
 
-        public static DynamicJsonObject ToJson(this IIndexedTime indexedTime)
+        public static JObject ToJson(this IIndexedTime indexedTime)
         {
-            dynamic coolObject = new DynamicJsonObject();
+            dynamic coolObject = new JObject();
             coolObject.id = indexedTime.Index;
             coolObject.realTime = indexedTime.Time.RealTime;
             coolObject.gameTime = indexedTime.Time.GameTime;

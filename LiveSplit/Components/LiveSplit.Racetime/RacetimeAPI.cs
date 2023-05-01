@@ -1,11 +1,10 @@
-﻿using CefSharp;
-using CefSharp.WinForms;
-using LiveSplit.Model;
+﻿using LiveSplit.Model;
 using LiveSplit.Racetime.Controller;
 using LiveSplit.Racetime.Model;
 using LiveSplit.Racetime.View;
 using LiveSplit.UI.Components;
 using LiveSplit.Web;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +12,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -54,7 +54,12 @@ namespace LiveSplit.Racetime
 
         public void Create(ITimerModel model)
         {
-            Process.Start(GetUri(Properties.Resources.CREATE_RACE_ADDRESS).AbsoluteUri);
+            var psi = new ProcessStartInfo
+            {
+                FileName = GetUri(Properties.Resources.CREATE_RACE_ADDRESS).AbsoluteUri,
+                UseShellExecute = true
+            };
+            Process.Start(psi);
         }
 
         public IEnumerable<Race> Races { get; set; }
@@ -70,41 +75,36 @@ namespace LiveSplit.Racetime
             return new Uri(BaseUri, subUri);
         }
 
-        public override void RefreshRacesListAsync()
+        public override async Task RefreshRacesListAsync()
         {
-            Task.Factory.StartNew(() => RefreshRacesList());
+            //Task.Factory.StartNew(() => RefreshRacesList());
+
+            Races = await GetRacesFromServer();
+            RacesRefreshedCallback?.Invoke(this);
         }
 
         protected void RefreshRacesList()
         {
-            try
-            {
-                Races = GetRacesFromServer().ToArray();
-                RacesRefreshedCallback?.Invoke(this);
-            }
-            catch { }
         }
 
 
-        protected IEnumerable<Race> GetRacesFromServer()
+        protected async Task<Race[]> GetRacesFromServer()
         {
-            var request = WebRequest.Create(new Uri(BaseUri.AbsoluteUri + racesEndpoint));
+            var request = new HttpRequestMessage(HttpMethod.Get, BaseUri.AbsoluteUri + racesEndpoint);
             request.Headers.Add("Authorization", "Bearer " + Authenticator.AccessToken);
 
-            using (var response = request.GetResponse())
-            {
-                var data = JSON.FromResponse(response);
+            var response = await HttpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
 
-                var races = data.races;
-                foreach (var r in races)
-                {
-                    Race raceObj;
-                    r.entrants = new List<dynamic>();
-                    raceObj = RTModelBase.Create<Race>(r);
-                    yield return raceObj;
-                }
-                yield break;
+            var raceList = new List<Race>();
+            var data = JObject.Parse(await response.Content.ReadAsStringAsync());
+            var races = data["races"];
+            foreach (var race in races)
+            {
+                raceList.Add(new Race(race.ToObject<RaceDto>()));
             }
+
+            return raceList.ToArray();
         }
 
         public override IEnumerable<IRaceInfo> GetRaces()
@@ -112,32 +112,16 @@ namespace LiveSplit.Racetime
             return Races;
         }
 
-        Dictionary<string, Image> CategoryImagesCache = new Dictionary<string, Image>();
-        public override Image GetGameImage(string id)
+        public override Uri GetGameImageUrl(string id)
         {
-            try
+            foreach (var race in Races)
             {
-                foreach (var race in Races)
+                if (race.Data.category.slug == id && race.Data.category.image != null)
                 {
-                    if (race.Data.category.slug == id)
-                    {
-                        if (CategoryImagesCache.ContainsKey(id))
-                        {
-                            return CategoryImagesCache[id];
-                        }
-                        else
-                        {
-                            WebClient wc = new WebClient();
-                            byte[] bytes = wc.DownloadData(race.Data.category.image);
-                            MemoryStream ms = new MemoryStream(bytes);
-                            System.Drawing.Image img = System.Drawing.Image.FromStream(ms);
-                            CategoryImagesCache.Add(id, img);
-                            return img;
-                        }
-                    }
+                    return new Uri(race.Data.category.image);
                 }
             }
-            catch { }
+
             return null;
         }
     }

@@ -1,4 +1,5 @@
-﻿using LiveSplit.Model;
+﻿using LiveSplit.Properties;
+using LiveSplit.Model;
 using System.Drawing;
 using System.IO;
 
@@ -8,7 +9,7 @@ namespace LiveSplit.UI.LayoutFactories
     {
         public ILayout Create(LiveSplitState state)
         {
-            using (var stream = new MemoryStream(Properties.Resources.DefaultLayout))
+            using (var stream = new MemoryStream(Resources.DefaultLayout))
             {
                 var layout = new XMLLayoutFactory(stream).Create(state);
 

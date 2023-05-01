@@ -13,6 +13,7 @@ using LiveSplit.UI;
 using LiveSplit.UI.Components;
 using LiveSplit.UI.LayoutFactories;
 using LiveSplit.UI.LayoutSavers;
+using LiveSplit.UI.Race;
 using LiveSplit.Updates;
 using LiveSplit.Utils;
 using LiveSplit.Web;
@@ -338,44 +339,46 @@ namespace LiveSplit.View
                 return;
             }
 
-            int menuItemIndex = RightClickMenu.Items.IndexOf(shareMenuItem);
-            int firstRaceProvider = menuItemIndex + 1;
-            int lastRaceProvider = RightClickMenu.Items.IndexOfKey("endRaceSection") - 1;
-            if (lastRaceProvider - firstRaceProvider >= 0)
-            {
-                for (int i = 0; i < (lastRaceProvider - firstRaceProvider) + 1; i++)
-                {
-                    RightClickMenu.Items[firstRaceProvider].Tag = null;
-                    RightClickMenu.Items[firstRaceProvider].MouseHover -= racingMenuItem_MouseHover;
-                    RightClickMenu.Items[firstRaceProvider].MouseLeave -= racingMenuItem_MouseLeave;
-                    RightClickMenu.Items.RemoveAt(firstRaceProvider);
-                }
-            }
+            
 
-            RaceProvider = ComponentManager.RaceProviderFactories.Select(x => x.Value.Create(Model, Settings.RaceProvider.FirstOrDefault(y => y.Name == x.Key)));
-            foreach (var raceProvider in RaceProvider.Reverse())
-            {
-                if (Settings.RaceProvider.Any(x => x.DisplayName == raceProvider.ProviderName && !x.Enabled))
-                    continue;
+            //int menuItemIndex = RightClickMenu.Items.IndexOf(shareMenuItem);
+            //int firstRaceProvider = menuItemIndex + 1;
+            //int lastRaceProvider = RightClickMenu.Items.IndexOfKey("endRaceSection") - 1;
+            //if (lastRaceProvider - firstRaceProvider >= 0)
+            //{
+            //    for (int i = 0; i < (lastRaceProvider - firstRaceProvider) + 1; i++)
+            //    {
+            //        RightClickMenu.Items[firstRaceProvider].Tag = null;
+            //        RightClickMenu.Items[firstRaceProvider].MouseHover -= racingMenuItem_MouseHover;
+            //        RightClickMenu.Items[firstRaceProvider].MouseLeave -= racingMenuItem_MouseLeave;
+            //        RightClickMenu.Items.RemoveAt(firstRaceProvider);
+            //    }
+            //}
 
-                raceProvider.RacesRefreshedCallback = RacesRefreshed;
-                ToolStripMenuItem raceProviderItem = new ToolStripMenuItem()
-                {
-                    Name = $"{raceProvider.ProviderName}racesMenuItem",
-                    Text = $"{raceProvider.ProviderName} Races",
-                    Tag = raceProvider
-                };
-                raceProviderItem.MouseHover += racingMenuItem_MouseHover;
-                raceProviderItem.MouseLeave += racingMenuItem_MouseLeave;
-                RightClickMenu.Items.Insert(menuItemIndex + 1, raceProviderItem);
-                raceProvider.RefreshRacesListAsync();
-            }
-            var srlRaceProvider = RaceProvider.FirstOrDefault(x => x.ProviderName == "SRL");
-            if (srlRaceProvider != null)
-            {
-                srlRaceProvider.JoinRace = SRL_JoinRace;
-                srlRaceProvider.CreateRace = SRL_NewRace;
-            }
+            //RaceProvider = ComponentManager.RaceProviderFactories.Select(x => x.Value.Create(Model, Settings.RaceProvider.FirstOrDefault(y => y.Name == x.Key)));
+            //foreach (var raceProvider in RaceProvider.Reverse())
+            //{
+            //    if (Settings.RaceProvider.Any(x => x.DisplayName == raceProvider.ProviderName && !x.Enabled))
+            //        continue;
+
+            //    raceProvider.RacesRefreshedCallback = RacesRefreshed;
+            //    ToolStripMenuItem raceProviderItem = new ToolStripMenuItem()
+            //    {
+            //        Name = $"{raceProvider.ProviderName}racesMenuItem",
+            //        Text = $"{raceProvider.ProviderName} Races",
+            //        Tag = raceProvider
+            //    };
+            //    raceProviderItem.MouseHover += racingMenuItem_MouseHover;
+            //    raceProviderItem.MouseLeave += racingMenuItem_MouseLeave;
+            //    RightClickMenu.Items.Insert(menuItemIndex + 1, raceProviderItem);
+            //    raceProvider.RefreshRacesListAsync();
+            //}
+            //var srlRaceProvider = RaceProvider.FirstOrDefault(x => x.ProviderName == "SRL");
+            //if (srlRaceProvider != null)
+            //{
+            //    srlRaceProvider.JoinRace = SRL_JoinRace;
+            //    srlRaceProvider.CreateRace = SRL_NewRace;
+            //}
 
         }
 
@@ -576,22 +579,22 @@ namespace LiveSplit.View
 
         void SetGameImage(RaceProviderAPI raceProvider, ToolStripMenuItem item, IRaceInfo race)
         {
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    var image = raceProvider.GetGameImage(race.GameId);
-                    this.InvokeIfRequired(() =>
-                    {
-                        try
-                        {
-                            item.Image = image;
-                        }
-                        catch { }
-                    });
-                }
-                catch { }
-            });
+            //Task.Factory.StartNew(() =>
+            //{
+            //    try
+            //    {
+            //        var image = raceProvider.GetGameImage(race.GameId);
+            //        this.InvokeIfRequired(() =>
+            //        {
+            //            try
+            //            {
+            //                item.Image = image;
+            //            }
+            //            catch { }
+            //        });
+            //    }
+            //    catch { }
+            //});
         }
 
         void SRL_JoinRace(ITimerModel model, string raceId)
@@ -2937,6 +2940,14 @@ namespace LiveSplit.View
             {
                 e.Effect = DragDropEffects.None;
             }
+        }
+
+        private void Races_Click(object sender, EventArgs e)
+        {
+            var window = new RaceViewWindow(Model, Settings);
+            var interopHelper = new System.Windows.Interop.WindowInteropHelper(window);
+            interopHelper.Owner = this.Handle;
+            window.Show();
         }
     }
 }

@@ -6,28 +6,15 @@ using System.Threading.Tasks;
 
 namespace LiveSplit.Racetime.Model
 {
-    public abstract class RTModelBase
+    public abstract class RTModelBase<T>
     {
         public DateTime Received { get; set; }
 
-        public static T Create<T>(dynamic dataroot) where T : RTModelBase, new()
+        public T Data { get; set; }
+
+        public RTModelBase(T data)
         {
-            if (dataroot == null)
-                return null;
-
-            T item = new T();
-            item.Received = DateTime.Now;
-            item.Data = dataroot;
-
-            return item;
+            Data = data;
         }
-
-        public dynamic Data { get; set; }
-
-        public RTModelBase()
-        {
-
-        }
-
     }
 }

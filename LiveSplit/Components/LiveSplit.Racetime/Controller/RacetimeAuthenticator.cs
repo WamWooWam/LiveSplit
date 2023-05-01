@@ -1,10 +1,13 @@
 ﻿using LiveSplit.Racetime.Model;
 using LiveSplit.Web;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -85,7 +88,11 @@ namespace LiveSplit.Racetime.Controller
         public RacetimeAuthenticator(IAuthentificationSettings s)
         {
             this.s = s;
+            this.HttpClient = new HttpClient();
+            this.HttpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         }
+
+        private HttpClient HttpClient { get; set; }
 
         private readonly Regex parameterRegex = new Regex(@"(\w+)=([-_A-Z0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -121,11 +128,9 @@ namespace LiveSplit.Racetime.Controller
             }
         }
 
-        private static string SHA256(string inputStirng)
+        private static string SHA256String(string inputString)
         {
-            byte[] bytes = Encoding.ASCII.GetBytes(inputStirng);
-            SHA256Managed sha256 = new SHA256Managed();
-            sha256.ComputeHash(bytes);
+            byte[] bytes = SHA256.HashData(Encoding.ASCII.GetBytes(inputString));
             string base64 = Convert.ToBase64String(bytes);
             base64 = base64.Replace("+", "-");
             base64 = base64.Replace("/", "_");
@@ -135,9 +140,8 @@ namespace LiveSplit.Racetime.Controller
 
         private static string GenerateRandomBase64Data(uint length)
         {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
             byte[] bytes = new byte[length];
-            rng.GetBytes(bytes);
+            RandomNumberGenerator.Fill(bytes);
             string base64 = Convert.ToBase64String(bytes);
             base64 = base64.Replace("+", "-");
             base64 = base64.Replace("/", "_");
@@ -145,14 +149,14 @@ namespace LiveSplit.Racetime.Controller
             return base64;
         }
 
-        private bool TryGetUserInfo()
+        private async Task<bool> TryGetUserInfoAsync()
         {
             //try to get the userinfo. if that works we are already authenticated and authorized
             if (AccessToken != null)
             {
                 try
                 {
-                    Identity = GetUserInfo(s, AccessToken);
+                    Identity = await GetUserInfoAsync(s, AccessToken);
                     return Identity != null;
                 }
                 catch (Exception ex)
@@ -170,19 +174,17 @@ namespace LiveSplit.Racetime.Controller
 
         private async Task<bool> TryRefreshAccess()
         {
-            string request, verifier;
-            Tuple<int, dynamic> result;
-            verifier = GenerateRandomBase64Data(32);
+            var verifier = GenerateRandomBase64Data(32);
 
             if (RefreshToken != null)
             {
-                request = $"code={Code}&redirect_uri={RedirectUri}&client_id={s.ClientID}&code_verifier={verifier}&client_secret={s.ClientSecret}&refresh_token={RefreshToken}&grant_type=refresh_token";
+                var request = $"code={Code}&redirect_uri={RedirectUri}&client_id={s.ClientID}&code_verifier={verifier}&client_secret={s.ClientSecret}&refresh_token={RefreshToken}&grant_type=refresh_token";
 
-                result = await RestRequest(s.TokenEndpoint, request);
+                var result = await RestRequest(s.TokenEndpoint, request);
                 if (result.Item1 == 200)
                 {
-                    AccessToken = result.Item2.access_token;
-                    RefreshToken = result.Item2.refresh_token;
+                    AccessToken = result.Item2["access_token"].ToObject<string>();
+                    RefreshToken = result.Item2["refresh_token"].ToObject<string>();
                     return true;
                 }
             }
@@ -191,14 +193,10 @@ namespace LiveSplit.Racetime.Controller
 
         private async Task<bool> TryGetAccess()
         {
-            string request, verifier;
-            Tuple<int, dynamic> result;
-            verifier = GenerateRandomBase64Data(32);
+            var verifier = GenerateRandomBase64Data(32);
+            var request = $"code={Code}&redirect_uri={RedirectUri}&client_id={s.ClientID}&code_verifier={verifier}&client_secret={s.ClientSecret}&scope={s.Scopes}&grant_type=authorization_code";
 
-
-            request = $"code={Code}&redirect_uri={RedirectUri}&client_id={s.ClientID}&code_verifier={verifier}&client_secret={s.ClientSecret}&scope={s.Scopes}&grant_type=authorization_code";
-
-            result = await RestRequest(s.TokenEndpoint, request);
+            var result = await RestRequest(s.TokenEndpoint, request);
             if (result.Item1 == 400)
             {
                 Error = "Access has been revoked. Reauthentication required";
@@ -211,9 +209,9 @@ namespace LiveSplit.Racetime.Controller
             }
 
 
-            AccessToken = result.Item2.access_token;
-            RefreshToken = result.Item2.refresh_token;
-            TokenExpireDate = DateTime.Now.AddSeconds(result.Item2.expires_in);
+            AccessToken = result.Item2["access_token"].ToObject<string>();
+            RefreshToken = result.Item2["refresh_token"].ToObject<string>();
+            TokenExpireDate = DateTime.Now.AddSeconds(result.Item2["expires_in"].ToObject<double>());
 
             if (AccessToken == null || RefreshToken == null)
             {
@@ -248,7 +246,7 @@ namespace LiveSplit.Racetime.Controller
             reqState = null;
             state = GenerateRandomBase64Data(32);
             verifier = GenerateRandomBase64Data(32);
-            challenge = SHA256(verifier);
+            challenge = SHA256String(verifier);
 
             try
             {
@@ -261,7 +259,7 @@ namespace LiveSplit.Racetime.Controller
 
                 Task<TcpClient> serverConnectionTask = localEndpoint.AcceptTcpClientAsync();
 
-                System.Diagnostics.Process.Start(request);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo() { FileName = request, UseShellExecute = true });
 
                 using (TcpClient serverConnection = await serverConnectionTask)
                 {
@@ -356,7 +354,7 @@ namespace LiveSplit.Racetime.Controller
             //1st: Try to get User information
             try
             {
-                if (TryGetUserInfo())
+                if (await TryGetUserInfoAsync())
                     goto success;
             }
             catch (SocketException) { goto failure; }
@@ -410,69 +408,47 @@ namespace LiveSplit.Racetime.Controller
             return AuthResult.Success;
         }
 
-        public RacetimeUser GetUserInfo(IAuthentificationSettings s, string AccessToken)
+        public async Task<RacetimeUser> GetUserInfoAsync(IAuthentificationSettings s, string AccessToken)
         {
-            var userInfoRequest = WebRequest.Create($"{s.AuthServer}{s.UserInfoEndpoint}");
-            userInfoRequest.Headers.Add(HttpRequestHeader.Authorization, $"Bearer {AccessToken}");
-            using (var r = userInfoRequest.GetResponse())
+            var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, $"{s.AuthServer}{s.UserInfoEndpoint}");
+            userInfoRequest.Headers.Add("Authorization", $"Bearer {AccessToken}");
+
+            using (var resp = await HttpClient.SendAsync(userInfoRequest))
+            using (var reader = new StreamReader(await resp.Content.ReadAsStreamAsync()))
+            using (var jsonTextReader = new JsonTextReader(reader))
             {
-                var userdata = JSON.FromResponse(r);
-                return RTModelBase.Create<RacetimeUser>(userdata);
+                var userdata = JObject.Load(jsonTextReader);
+                return new RacetimeUser(userdata.ToObject<UserDto>());
             }
         }
 
-        public void UpdateUserInfo()
+        public async Task UpdateUserInfoAsync()
         {
-            Identity = GetUserInfo(s, AccessToken);
+            Identity = await GetUserInfoAsync(s, AccessToken);
         }
 
-        public async Task<Tuple<int, dynamic>> RestRequest(string endpoint, string body)
+        public async Task<Tuple<int, JObject>> RestRequest(string endpoint, string body)
         {
             string state = GenerateRandomBase64Data(32);
             body += "&state=" + state;
-            HttpWebRequest tokenRequest = (HttpWebRequest)WebRequest.Create($"{s.AuthServer}{s.TokenEndpoint}");
 
-            tokenRequest.Method = "POST";
-            tokenRequest.ContentType = "application/x-www-form-urlencoded";
-            tokenRequest.Accept = "Accept=text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-            byte[] buf = Encoding.ASCII.GetBytes(body);
-            tokenRequest.ContentLength = buf.Length;
-            using (Stream stream = tokenRequest.GetRequestStream())
-            {
-                await stream.WriteAsync(buf, 0, buf.Length);
-                stream.Close();
-            }
+            var tokenRequest = new HttpRequestMessage(HttpMethod.Post, $"{s.AuthServer}{s.TokenEndpoint}");
+            tokenRequest.Content = new StringContent(body, Encoding.UTF8, "application/x-www-form-urlencoded");
 
             try
             {
-                WebResponse tokenResponse = await tokenRequest.GetResponseAsync();
-                dynamic response = JSON.FromResponse(tokenResponse);
-                return new Tuple<int, dynamic>(200, response);
-            }
-            catch (WebException ex)
-            {
-                if (ex.Status == WebExceptionStatus.ProtocolError)
+                using (var resp = await HttpClient.SendAsync(tokenRequest))
+                using (var reader = new StreamReader(await resp.Content.ReadAsStreamAsync()))
+                using (var jsonTextReader = new JsonTextReader(reader))
                 {
-                    WebResponse response = ex.Response as HttpWebResponse;
-                    try
-                    {
-                        var r = JSON.FromResponse(response);
-                        return new Tuple<int, dynamic>(400, r);
-                    }
-                    catch
-                    {
-                        return new Tuple<int, dynamic>(500, null);
-                    }
+                    var userdata = JObject.Load(jsonTextReader);
+                    return new Tuple<int, JObject>((int)resp.StatusCode, userdata);
                 }
             }
             catch
             {
-
+                return new Tuple<int, JObject>(500, null);
             }
-
-            return new Tuple<int, dynamic>(500, null);
         }
-
     }
-
 }

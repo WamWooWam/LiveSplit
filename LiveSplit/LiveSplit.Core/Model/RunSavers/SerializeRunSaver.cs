@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using Newtonsoft.Json;
+using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 
 namespace LiveSplit.Model.RunSavers
 {
@@ -13,8 +15,9 @@ namespace LiveSplit.Model.RunSavers
                 segment.SplitTime = default(Time);
             }
 
-            var formatter = new BinaryFormatter();
-            formatter.Serialize(stream, obj);
+            var formatter = new JsonSerializer();
+            using var writer = new StreamWriter(stream, encoding: Encoding.UTF8, leaveOpen: true);
+            formatter.Serialize(writer, obj);
         }
     }
 }

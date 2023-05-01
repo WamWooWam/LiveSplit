@@ -1,4 +1,5 @@
-﻿using Fetze.WinFormsColor;
+﻿using WinFormsFontDialog;
+using Fetze.WinFormsColor;
 using System;
 using System.Drawing;
 using System.Globalization;
@@ -6,14 +7,16 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 using System.Xml;
+using System.Drawing.Imaging;
 
 namespace LiveSplit.UI
 {
     public class SettingsHelper
     {
-        public static CustomFontDialog.FontDialog GetFontDialog(Font previousFont, int minSize, int maxSize)
+        // TODO: This creates a hard dependency on WinFormsFontDialog, which is not ideal.
+        public static CustomFontDialog GetFontDialog(Font previousFont, int minSize, int maxSize)
         {
-            var dialog = new CustomFontDialog.FontDialog();
+            var dialog = new CustomFontDialog();
             dialog.OriginalFont = previousFont;
             dialog.MinSize = minSize;
             dialog.MaxSize = maxSize;
@@ -22,7 +25,7 @@ namespace LiveSplit.UI
 
         public static string FormatFont(Font font)
         {
-            return $"{ font.FontFamily.Name } { font.Style }";
+            return $"{font.FontFamily.Name} {font.Style}";
         }
 
         public static void ColorButtonClick(Button button, Control control)
@@ -36,8 +39,8 @@ namespace LiveSplit.UI
 
         public static Color ParseColor(XmlElement colorElement, Color defaultColor = default(Color))
         {
-            return colorElement != null 
-                ? Color.FromArgb(int.Parse(colorElement.InnerText, NumberStyles.HexNumber)) 
+            return colorElement != null
+                ? Color.FromArgb(int.Parse(colorElement.InnerText, NumberStyles.HexNumber))
                 : defaultColor;
         }
 
@@ -45,12 +48,25 @@ namespace LiveSplit.UI
         {
             if (element != null && !element.IsEmpty)
             {
-                var bf = new BinaryFormatter();
-
-                var base64String = element.InnerText;
-                var data = Convert.FromBase64String(base64String);
-                var ms = new MemoryStream(data);
-                return (Font)bf.Deserialize(ms);
+                // try to find the new XML format
+                var fontElement = element["Font"];
+                if (fontElement != null)
+                {
+                    var fontName = fontElement.Attributes["Name"].InnerText;
+                    var fontSize = float.Parse(fontElement.Attributes["Size"].InnerText);
+                    var fontStyle = (FontStyle)Enum.Parse(typeof(FontStyle), fontElement.Attributes["Style"].InnerText);
+                    return new Font(fontName, fontSize, fontStyle);
+                }
+                else if (element.FirstChild is XmlCDataSection cdata) // otherwise we have to use the old (bad) binary format
+                {
+                    using (var ms = new MemoryStream(Convert.FromBase64String(cdata.InnerText)))
+                    {
+#pragma warning disable SYSLIB0011
+                        var bf = new BinaryFormatter();
+                        return (Font)bf.Deserialize(ms);
+#pragma warning restore SYSLIB0011
+                    }
+                }
             }
             return null;
         }
@@ -61,18 +77,25 @@ namespace LiveSplit.UI
             {
                 var element = document.CreateElement(elementName);
 
+                // write the new XML format
                 if (font != null)
                 {
-                    using (var ms = new MemoryStream())
-                    {
-                        var bf = new BinaryFormatter();
+                    var fontElement = document.CreateElement("Font");
+                    var nameAttribute = document.CreateAttribute("Name");
+                    nameAttribute.InnerText = font.Name;
+                    fontElement.Attributes.Append(nameAttribute);
 
-                        bf.Serialize(ms, font);
-                        var data = ms.ToArray();
-                        var cdata = document.CreateCDataSection(Convert.ToBase64String(data));
-                        element.InnerXml = cdata.OuterXml;
-                    }
+                    var sizeAttribute = document.CreateAttribute("Size");
+                    sizeAttribute.InnerText = font.Size.ToString();
+                    fontElement.Attributes.Append(sizeAttribute);
+
+                    var styleAttribute = document.CreateAttribute("Style");
+                    styleAttribute.InnerText = font.Style.ToString();
+                    fontElement.Attributes.Append(styleAttribute);
+
+                    element.AppendChild(fontElement);
                 }
+
                 parent.AppendChild(element);
             }
             return getFontHashCode(font);
@@ -91,23 +114,20 @@ namespace LiveSplit.UI
             return hash;
         }
 
+        [Obsolete("TODO: Storing images in XML is icky.")]
         public static int CreateSetting(XmlDocument document, XmlElement parent, string elementName, Image image)
         {
             if (document != null)
             {
                 var element = document.CreateElement(elementName);
-
                 if (image != null)
                 {
-                    using (var ms = new MemoryStream())
-                    {
-                        var bf = new BinaryFormatter();
+                    using var stream = new MemoryStream();
+                    image.Save(stream, ImageFormat.Jpeg);
 
-                        bf.Serialize(ms, image);
-                        var data = ms.ToArray();
-                        var cdata = document.CreateCDataSection(Convert.ToBase64String(data));
-                        element.InnerXml = cdata.OuterXml;
-                    }
+                    // god this is awful
+                    var base64String = Convert.ToBase64String(stream.ToArray());
+                    element.InnerText = base64String;
                 }
 
                 parent.AppendChild(element);
@@ -116,19 +136,29 @@ namespace LiveSplit.UI
             return image != null ? image.GetHashCode() : 0;
         }
 
+        [Obsolete("TODO: Storing images in XML is icky.")]
         public static Image GetImageFromElement(XmlElement element)
         {
             if (element != null && !element.IsEmpty)
             {
-                var bf = new BinaryFormatter();
-
                 var base64String = element.InnerText;
                 var data = Convert.FromBase64String(base64String);
+                using var ms = new MemoryStream(data);
 
-                using (var ms = new MemoryStream(data))
+                try
                 {
+                    // try the old way
+                    var bf = new BinaryFormatter();
                     return (Image)bf.Deserialize(ms);
                 }
+                catch (Exception)
+                {
+                    ms.Position = 0;
+
+                    // try the new way
+                    return Image.FromStream(ms);
+                }
+
             }
             return null;
         }
@@ -294,8 +324,8 @@ namespace LiveSplit.UI
 
         public static T ParseEnum<T>(XmlElement element, T defaultEnum = default(T))
         {
-            return element != null 
-                ? (T)Enum.Parse(typeof(T), element.InnerText) 
+            return element != null
+                ? (T)Enum.Parse(typeof(T), element.InnerText)
                 : defaultEnum;
         }
 
@@ -305,15 +335,15 @@ namespace LiveSplit.UI
             {
                 return true;
             }
-            
+
             result = defaultEnum;
             return false;
         }
 
         public static Version ParseVersion(XmlElement element)
         {
-            return element != null 
-                ? Version.Parse(element.InnerText) 
+            return element != null
+                ? Version.Parse(element.InnerText)
                 : new Version(1, 0, 0, 0);
         }
 

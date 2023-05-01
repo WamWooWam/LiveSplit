@@ -26,7 +26,7 @@ namespace LiveSplit.Web.SRL
                 StateChanged?.Invoke(this, RaceState);
             }
         }
-        protected IrcClient Client { get; set; }
+        protected StandardIrcClient Client { get; set; }
         public ITimerModel Model { get; set; }
 
         public bool IsConnected => Client.IsConnected;
@@ -60,7 +60,7 @@ namespace LiveSplit.Web.SRL
         public SpeedRunsLiveIRC(LiveSplitState state, ITimerModel model, IEnumerable<string> channels)
         {
             ChannelsToJoin = channels.ToList();
-            Client = new IrcClient();
+            Client = new StandardIrcClient();
             Client.ConnectFailed += Client_ConnectFailed;
             Client.Connected += Client_Connected;
             Client.Registered += Client_Registered;
@@ -77,7 +77,7 @@ namespace LiveSplit.Web.SRL
         void RaceChannel_UserKicked(object sender, IrcChannelUserEventArgs e)
         {
             if (e.ChannelUser.User.NickName == Client.LocalUser.NickName)
-               Kicked?.Invoke(this, null);
+                Kicked?.Invoke(this, null);
         }
 
         void Client_Disconnected(object sender, EventArgs e)
@@ -326,11 +326,11 @@ namespace LiveSplit.Web.SRL
 
                     if (Model.CurrentState.CurrentComparison.Equals(raceComparison))
                         Model.CurrentState.CurrentComparison = Run.PersonalBestComparisonName;
-                    
+
                     var comparisonGenerator = Model.CurrentState.Run.ComparisonGenerators.FirstOrDefault(x => x.Name == raceComparison);
                     if (comparisonGenerator != null)
                         Model.CurrentState.Run.ComparisonGenerators.Remove(comparisonGenerator);
-                    
+
                     foreach (var segment in Model.CurrentState.Run)
                         segment.Comparisons[raceComparison] = default(Time);
                 }
@@ -493,7 +493,7 @@ namespace LiveSplit.Web.SRL
         {
             Username = username;
             Password = password;
-            Client.Connect(server, 6667, new IrcUserRegistrationInfo()
+            Client.Connect(server, 6667, false, new IrcUserRegistrationInfo()
             {
                 UserName = username,
                 NickName = username,
@@ -507,7 +507,7 @@ namespace LiveSplit.Web.SRL
         }
 
         void Client_Connected(object sender, EventArgs e)
-        {   
+        {
         }
 
         void Client_ConnectFailed(object sender, IrcErrorEventArgs e)
@@ -592,13 +592,13 @@ namespace LiveSplit.Web.SRL
                 return new SRLIRCUser[0];
 
             return RaceChannel.Users
-                .Select(x => 
+                .Select(x =>
                 new SRLIRCUser(
                     x.User.NickName,
                     SRLIRCRightsHelper.FromIrcChannelUser(x)
                     )
                 )
-                .OrderBy(x => 
+                .OrderBy(x =>
                     ((x.Rights == SRLIRCRights.Operator)
                     ? "0"
                     : (x.Rights == SRLIRCRights.Voice)

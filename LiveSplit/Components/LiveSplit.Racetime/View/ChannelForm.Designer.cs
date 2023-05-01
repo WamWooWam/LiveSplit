@@ -28,13 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.chatBox = new CefSharp.WinForms.ChromiumWebBrowser();
+            this.chatBox = new Microsoft.Web.WebView2.WinForms.WebView2();
             this.loadMessage = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // chatBox
             // 
-            this.chatBox.ActivateBrowserOnCreation = false;
             this.chatBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chatBox.Location = new System.Drawing.Point(0, 0);
             this.chatBox.Name = "chatBox";
@@ -74,7 +73,7 @@
         }
 
         #endregion
-        private CefSharp.WinForms.ChromiumWebBrowser chatBox;
+        private Microsoft.Web.WebView2.WinForms.WebView2 chatBox;
         private System.Windows.Forms.Label loadMessage;
     }
 }
